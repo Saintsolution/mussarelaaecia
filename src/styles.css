@@ -1,0 +1,157 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Pizzaria da Pizza — design system
+ * Inspired by the warm brown/mustard tones of the logo. Dark by default.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-cocoa: var(--cocoa);
+  --color-mustard: var(--mustard);
+  --color-mustard-foreground: var(--mustard-foreground);
+  --color-cream: var(--cream);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-foreground: var(--whatsapp-foreground);
+  --font-display: "Archivo Black", "Bebas Neue", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* Mapeamento das animações no Tailwind v4 (Correto aqui dentro) */
+  --animate-pulse-subtle: pulse-subtle 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
+}
+
+/* --- AS DECLARAÇÕES DOS KEYFRAMES FICAM FORA DO @THEME NO TAILWIND V4 --- */
+@keyframes pulse-subtle {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 18px 40px -18px var(--color-accent); 
+  }
+  50% { 
+    transform: scale(1.008); 
+    box-shadow: 0 18px 40px -10px var(--color-primary); 
+  }
+}
+
+@keyframes shimmer {
+  100% { 
+    transform: translateX(100%); 
+  }
+}
+
+:root {
+  --radius: 0.625rem;
+  /* Dark warm pizzeria theme as the default */
+  --background: oklch(0.18 0.03 50);        /* #2b1810 deep cocoa */
+  --foreground: oklch(0.95 0.04 85);        /* warm cream text */
+  --card: oklch(0.23 0.04 45);              /* slightly lifted */
+  --card-foreground: oklch(0.95 0.04 85);
+  --popover: oklch(0.23 0.04 45);
+  --popover-foreground: oklch(0.95 0.04 85);
+  --primary: oklch(0.72 0.17 60);           /* mustard / amber #d97706 */
+  --primary-foreground: oklch(0.18 0.03 50);
+  --secondary: oklch(0.30 0.06 45);         /* mid brown */
+  --secondary-foreground: oklch(0.95 0.04 85);
+  --muted: oklch(0.26 0.04 45);
+  --muted-foreground: oklch(0.78 0.04 80);
+  --accent: oklch(0.65 0.18 40);            /* terracotta */
+  --accent-foreground: oklch(0.98 0.02 85);
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(0.35 0.04 50 / 60%);
+  --input: oklch(0.30 0.04 50);
+  --ring: oklch(0.72 0.17 60);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.23 0.04 45);
+  --sidebar-foreground: oklch(0.95 0.04 85);
+  --sidebar-primary: oklch(0.72 0.17 60);
+  --sidebar-primary-foreground: oklch(0.18 0.03 50);
+  --sidebar-accent: oklch(0.30 0.06 45);
+  --sidebar-accent-foreground: oklch(0.95 0.04 85);
+  --sidebar-border: oklch(0.35 0.04 50 / 60%);
+  --sidebar-ring: oklch(0.72 0.17 60);
+
+  /* Custom brand tokens */
+  --cocoa: oklch(0.14 0.025 50);            /* deepest brown for header */
+  --mustard: oklch(0.78 0.16 70);           /* button highlight */
+  --mustard-foreground: oklch(0.18 0.03 50);
+  --cream: oklch(0.94 0.05 85);
+  --whatsapp: oklch(0.65 0.18 145);
+  --whatsapp-foreground: oklch(0.98 0 0);
+
+  --gradient-warm: linear-gradient(135deg, oklch(0.72 0.17 60), oklch(0.65 0.18 40));
+  --gradient-hero: linear-gradient(180deg, oklch(0.18 0.03 50 / 0%) 40%, oklch(0.14 0.025 50 / 90%) 100%);
+  --shadow-warm: 0 18px 40px -18px oklch(0.14 0.025 50 / 70%);
+  --shadow-pop: 0 8px 24px -8px oklch(0.72 0.17 60 / 45%);
+}
+
+.dark {
+  --background: oklch(0.14 0.025 50);
+  --foreground: oklch(0.95 0.04 85);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+}
