@@ -118,7 +118,7 @@ function AdminPanel() {
     if (promoData && promoData.length > 0) {
       const regulares = promoData.filter(p => p.id !== TOP_BANNER_UUID);
       setPromotions(regulares as Promotion[]);
-      if (regulares.length > 0) carregarDadosPromocao(regulares[0] as Promotion);
+      if (regulares.length > 0 && !selectedPromoId) carregarDadosPromocao(regulares[0] as Promotion);
 
       const topoInfo = promoData.find(p => p.id === TOP_BANNER_UUID);
       if (topoInfo) {
@@ -157,7 +157,6 @@ function AdminPanel() {
     setPromoPreco(promo.preco.toString());
     setPromoPrecoAntigo(promo.preco_antigo?.toString() || "");
     
-    // Tenta decodificar se o card de baixo já possuir estrutura JSON salva
     try {
       if (promo.descricao && promo.descricao.startsWith("{")) {
         const parsed = JSON.parse(promo.descricao);
@@ -255,10 +254,10 @@ function AdminPanel() {
     if (error) {
       alert("Erro ao salvar dados do topo: " + error.message);
     } else {
-      localStorage.setItem("pizzaria_banner_carrossel", bannerCarrosselUrl);
+      localStorage.setItem("pizzaria_banner_carrossel", bannerCarrosselUrl || "");
       localStorage.setItem("pizzaria_banner_target_id", TOP_BANNER_UUID);
       alert("🔥 Campanha e limites estruturados salvos com sucesso!");
-      fetchData();
+      await fetchData();
     }
   };
 
@@ -269,7 +268,6 @@ function AdminPanel() {
       if (!selectedPromoId) return;
       setLoading(true);
 
-      // Empacota de forma estruturada as regras do card de baixo antes de subir pro Supabase
       const cardDescricaoEstruturada = JSON.stringify({
         salgadas: parseInt(cardQtdeSalgadas) || 0,
         doces: parseInt(cardQtdeDoces) || 0,
@@ -278,6 +276,10 @@ function AdminPanel() {
         textoExibido: promoDescricaoTexto
       });
 
+      // Busca a imagem atual no estado local antes de atualizar para não perder a referência
+      const promoAtual = promotions.find(p => p.id === selectedPromoId);
+      const imagemFinal = imageUrl || promoAtual?.image_url || null;
+
       const { error } = await supabase
         .from("promotions")
         .update({
@@ -285,7 +287,7 @@ function AdminPanel() {
           descricao: cardDescricaoEstruturada,
           preco: parseFloat(promoPreco) || 0,
           preco_antigo: promoPrecoAntigo ? parseFloat(promoPrecoAntigo) : null,
-          image_url: imageUrl || null
+          image_url: imagemFinal
         })
         .eq("id", selectedPromoId);
 
@@ -293,7 +295,8 @@ function AdminPanel() {
       if (error) alert("Erro ao salvar card: " + error.message);
       else {
         alert("Card regular e limites salvos com sucesso!");
-        fetchData();
+        setImageUrl(""); 
+        await fetchData();
       }
       return;
     }
@@ -325,7 +328,7 @@ function AdminPanel() {
       else {
         alert("Produto modificado!");
         handleClearForm();
-        fetchData();
+        await fetchData();
       }
     } else {
       const { error } = await supabase.from("products").insert([productData]);
@@ -333,7 +336,7 @@ function AdminPanel() {
       else {
         alert("Produto inserido!");
         handleClearForm();
-        fetchData();
+        await fetchData();
       }
     }
   };
@@ -370,7 +373,7 @@ function AdminPanel() {
       if (error) alert("Erro ao remover: " + error.message);
       else {
         alert("Produto removido!");
-        fetchData();
+        await fetchData();
       }
     }
   };
@@ -404,7 +407,6 @@ function AdminPanel() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* CABEÇALHO DO PAINEL */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
         <h1 className="font-display text-2xl md:text-3xl text-[#3d2b1f] font-black uppercase">
           Gerenciador de Dados • Mussarela & Cia
@@ -425,7 +427,6 @@ function AdminPanel() {
         </div>
       </div>
 
-      {/* NAVEGAÇÃO POR ABAS CRISTALINAS */}
       <div className="flex gap-2 mb-6 border-b pb-px">
         <button
           onClick={() => { setActiveTab("CARDAPIO"); handleClearForm(); }}
@@ -450,17 +451,13 @@ function AdminPanel() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* COLUNA ESQUERDA: FORMULÁRIO DINÂMICO */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit">
           <h2 className="font-display text-xl text-[#3d2b1f] font-black mb-4 uppercase">
             {activeTab === "PROMO" ? "Configurar Campanhas" : editingProduct ? "Modificar Item" : "Novo Item do Cardápio"}
           </h2>
           
-          {/* CONTEXTO DA ABA DE PROMOÇÕES */}
           {activeTab === "PROMO" ? (
             <div className="space-y-6">
-              
-              {/* ─── QUADRO EXCLUSIVO E INDEPENDENTE: PROMOÇÃO DO DIA / CARROSSEL ─── */}
               <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 p-4 rounded-2xl border-2 border-dashed border-amber-200 space-y-3 shadow-sm">
                 <div className="flex items-center gap-2 border-b border-amber-100 pb-1.5">
                   <span className="text-lg">🎯</span>
@@ -485,7 +482,7 @@ function AdminPanel() {
                     type="text" value={topBannerNome}
                     onChange={(e) => setTopBannerNome(e.target.value)}
                     className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-300 text-slate-800 font-medium"
-                    placeholder="Ex: Super Combo da Maré, Combo da Copa..."
+                    placeholder="Ex: Super Combo da Maré..."
                   />
                 </div>
 
@@ -495,11 +492,10 @@ function AdminPanel() {
                     value={textoInformativo}
                     onChange={(e) => setTextoInformativo(e.target.value)}
                     className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-300 h-12 resize-none text-slate-800 font-medium"
-                    placeholder="Ex: Leve nossa seleção campeã com preço reduzido por tempo limitado!"
+                    placeholder="Leve nossa seleção campeã com preço reduzido!"
                   />
                 </div>
 
-                {/* PAINEL DINÂMICO DE LIMITES POR TIPOS DE PRODUTOS (TOPO) */}
                 <div className="bg-white p-2.5 rounded-xl border border-amber-200 space-y-2">
                   <span className="block text-[9px] font-black uppercase text-amber-900 tracking-wider">
                     🔢 Quantidades Liberadas no Modal:
@@ -555,7 +551,6 @@ function AdminPanel() {
                       type="number" step="0.01" value={topBannerPrecoAntigo}
                       onChange={(e) => setTopBannerPrecoAntigo(e.target.value)}
                       className="w-full px-2 py-1 text-xs rounded-lg border border-gray-300 text-slate-800 font-medium"
-                      placeholder="Opcional"
                     />
                   </div>
                 </div>
@@ -580,7 +575,6 @@ function AdminPanel() {
                 </button>
               </div>
 
-              {/* ─── QUADRO SEPARADO: EDITAR COMPOSIÇÃO DOS 4 CARDS DE BAIXO ENGENHARADO ─── */}
               <form onSubmit={handleSaveSubmit} className="space-y-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center gap-2 pb-1">
                   <span className="text-lg">🔥</span>
@@ -616,7 +610,6 @@ function AdminPanel() {
                     type="text" value={promoNomeExibido}
                     onChange={(e) => setPromoNomeExibido(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 text-slate-800 font-medium"
-                    placeholder="Ex: Kit da Maré, 2 Pizzas G"
                   />
                 </div>
 
@@ -626,11 +619,9 @@ function AdminPanel() {
                     value={promoDescricaoTexto}
                     onChange={(e) => setPromoDescricaoTexto(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 h-16 resize-none text-slate-800 font-medium"
-                    placeholder="Descreva a oferta de forma atraente..."
                   />
                 </div>
 
-                {/* PAINEL DINÂMICO DE LIMITES INJETADO TAMBÉM NOS CARDS DE BAIXO! */}
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-200 space-y-2">
                   <span className="block text-[9px] font-black uppercase text-slate-700 tracking-wider">
                     🔢 Limites de Itens para este Card:
@@ -686,7 +677,6 @@ function AdminPanel() {
                       type="number" step="0.01" value={promoPrecoAntigo}
                       onChange={(e) => setPromoPrecoAntigo(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 text-slate-800 font-medium"
-                      placeholder="Opcional"
                     />
                   </div>
                 </div>
@@ -700,14 +690,12 @@ function AdminPanel() {
               </form>
             </div>
           ) : (
-            // ABA CARDÁPIO REGULAR (PRODUTOS NORMAIS)
             <form onSubmit={handleSaveSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-black uppercase text-slate-600 mb-1">Nome do Produto</label>
                 <input
                   type="text" value={nome} onChange={(e) => setNome(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-gray-300 text-slate-800 font-medium"
-                  placeholder="Ex: Pizza de Calabresa"
                 />
               </div>
 
@@ -716,7 +704,6 @@ function AdminPanel() {
                 <textarea
                   value={descricao} onChange={(e) => setDescricao(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-gray-300 h-16 resize-none text-slate-800 font-medium"
-                  placeholder="Ingredientes..."
                 />
               </div>
 
@@ -742,7 +729,7 @@ function AdminPanel() {
               </div>
 
               <div className="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200 space-y-2">
-                <span className="block text-[10px] font-black uppercase text-gray-500 tracking-wider">Tamanhos Adicionais (Opcional)</span>
+                <span className="block text-[10px] font-black uppercase text-gray-500 tracking-wider">Tamanhos Adicionais</span>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="block text-[9px] font-black uppercase text-slate-600 mb-0.5">Brotinho</label>
@@ -794,7 +781,7 @@ function AdminPanel() {
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit" disabled={uploading || loading}
-                  className="flex-1 bg-[#E33B19] text-white font-black py-2.5 rounded-xl border-2 border-[#FFD166] uppercase text-xs tracking-wider"
+                  className="w-full bg-[#E33B19] text-white font-black py-2.5 rounded-xl border-2 border-[#FFD166] uppercase text-xs tracking-wider"
                 >
                   {editingProduct ? "Salvar Alterações" : "Inserir Produto"}
                 </button>
@@ -811,7 +798,6 @@ function AdminPanel() {
           )}
         </div>
 
-        {/* COLUNA DIREITA: LISTA DE PRODUTOS VINDOS DO SUPABASE */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h2 className="font-display text-xl text-[#3d2b1f] font-black mb-4 uppercase">
             Cardápio Ativo no Supabase ({products.length} itens)
