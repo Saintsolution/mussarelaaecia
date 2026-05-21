@@ -1,14 +1,8 @@
 [build]
   command = "npm run build"
-  publish = ".output/public"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs" # Ajuda o Netlify a tratar frameworks SSR modernos se necessário, mas o principal são as regras abaixo
-
-[dev]
-  command = "npm run dev"
+  publish = "dist/client"
 
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/server"
+  to = "/index.html"
   status = 200
