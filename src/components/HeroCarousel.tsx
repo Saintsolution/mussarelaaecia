@@ -15,43 +15,40 @@ export function HeroCarousel() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<any>(null);
 
-  // Estados locais para guardar as informações do localStorage apenas no cliente
-  const [bannerImg, setBannerImg] = useState<string | null>(null);
-  const [expirationDate, setExpirationDate] = useState<string | null>(null);
+  // Encontra os dados da promoção do topo vindos DIRETO do Supabase em tempo real
+  const topPromoFromDb = useMemo(() => {
+    return promotions.find((p) => p.id === TOP_BANNER_UUID);
+  }, [promotions]);
 
-  // Esse hook roda APENAS no navegador do cliente, protegendo o app contra estouro de SSR
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setBannerImg(localStorage.getItem("pizzaria_banner_carrossel"));
-      setExpirationDate(localStorage.getItem("pizzaria_banner_valid_to"));
-    }
-  }, [promotions]); // Reavalia sempre que o catálogo recarregar
-
-  // Checa se a data final expirou baseando-se no relógio atual do cliente
+  // Checa se a campanha expirou direto pela data salva no banco de dados (se houver)
   const isExpired = useMemo(() => {
-    if (!expirationDate) return false;
-    return new Date() > new Date(expirationDate);
-  }, [expirationDate]);
+    // Caso use data de expiração no banco, pode tratar aqui. Por enquanto, se tiver imagem no banco, exibe.
+    return false;
+  }, []);
 
-  // --- MONTAGEM COMPOSITA DA LISTA DE SLIDES ---
+  // --- MONTAGEM COMPOSITA DA LISTA DE SLIDES 100% DINÂMICA ---
   const slides = useMemo(() => {
     const base = [staticSlides[0]];
 
-    // Se houver uma arte válida no cliente e não estiver expirada, injetamos ela
-    if (bannerImg && !isExpired) {
-      const linkedCombo = promotions.find((p) => p.id === TOP_BANNER_UUID);
-
+    // Se o banco do Supabase trouxer a promoção do topo e ela tiver uma imagem válida, injetamos no carrossel!
+    if (topPromoFromDb && topPromoFromDb.image_url) {
       base.push({
         id: TOP_BANNER_UUID,
         tipo: "promo",
-        image: bannerImg,
-        comboData: linkedCombo || null
+        image: topPromoFromDb.image_url, // URL Real do Bucket do Supabase
+        comboData: topPromoFromDb
       } as any);
     }
 
     return base;
-  }, [bannerImg, isExpired, promotions]);
+  }, [topPromoFromDb]);
 
+  // Reseta o índice se a lista de slides mudar para evitar estouro de tela
+  useEffect(() => {
+    setIdx(0);
+  }, [slides.length]);
+
+  // Transição automática de slides
   useEffect(() => {
     if (slides.length <= 1) return;
     const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 7000);
@@ -62,12 +59,6 @@ export function HeroCarousel() {
     if (slideData.comboData) {
       setSelectedPromo(slideData.comboData);
       setIsModalOpen(true);
-    } else {
-      const combo = promotions.find((p) => p.id === TOP_BANNER_UUID);
-      if (combo) {
-        setSelectedPromo(combo);
-        setIsModalOpen(true);
-      }
     }
   };
 
@@ -81,7 +72,6 @@ export function HeroCarousel() {
               className={`absolute inset-0 transition-opacity duration-700 ${i === idx ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               aria-hidden={i !== idx}
             >
-              {/* Imagem clicável de ponta a ponta se for a promoção */}
               <img
                 src={s.image}
                 alt="Pizzaria Mussarela & Cia"
@@ -91,7 +81,6 @@ export function HeroCarousel() {
               />
               <div className="absolute inset-0 bg-black/10 pointer-events-none" />
 
-              {/* SLIDE 1: HOTSPOTS INTERATIVOS */}
               {s.tipo === "hotspots" && s.hotspots && (
                 <>
                   {s.hotspots.map((h: any) => (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, Plus, Check, Clock } from "lucide-react";
+import { X, Plus, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/whatsapp";
 import { useCart } from "@/lib/cart";
@@ -27,7 +27,6 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
   
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const [validadeTexto, setValidadeTexto] = useState<string | null>(null);
 
   // Estados de escolhas divididas do combo
   const [salgadas, setSalgadas] = useState<string[]>([]);
@@ -39,13 +38,11 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
   const dadosDecodificados = useMemo(() => {
     if (!promotion) return { nome: "", descricao: "", salgadas: 1, doces: 0, bebidas: 0, outros: 0 };
 
-    // Valores padrão de segurança
     let nomeFinal = promotion.nome || "";
     let descricaoFinal = "";
     let limitesFinais = { salgadas: 1, doces: 0, bebidas: 0, outros: 0 };
 
     try {
-      // Se a descrição começar com "{", significa que veio do novo painel estruturado do Admin!
       if (promotion.descricao && promotion.descricao.startsWith("{")) {
         const parsed = JSON.parse(promotion.descricao);
         descricaoFinal = parsed.textoExibido || "";
@@ -56,7 +53,6 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
           outros: parsed.outros || 0
         };
       } else {
-        // Se for um texto comum das outras 4 promoções antigas
         descricaoFinal = promotion.descricao || "";
         const textoLower = `${nomeFinal} ${descricaoFinal}`.toLowerCase();
         if (textoLower.includes("2 pizzas") || promotion.badge === "2 Pizzas G") {
@@ -81,19 +77,6 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
       setDoces([]);
       setBebidas([]);
       setOutros([]);
-      
-      const expirationDate = localStorage.getItem("pizzaria_banner_valid_to");
-      if (expirationDate && promotion?.id === "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d") {
-        const dataFormatada = new Date(expirationDate).toLocaleString("pt-BR", {
-          day: "2-digit",
-          month: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-        setValidadeTexto(`Termina em: ${dataFormatada}`);
-      } else {
-        setValidadeTexto(null);
-      }
     }
   }, [isOpen, promotion]);
 
@@ -120,13 +103,13 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
     setLoading(false);
   }
 
-  // Filtros de categoria dinâmicos baseados no cadastro do Supabase
+  // Filtros de categoria aprimorados para evitar sobreposição de nomes parecidos
   const listasFiltradas = useMemo(() => {
     return {
-      salgadas: products.filter(p => p.category_name.includes("salgada") || p.category_name.includes("pizza")),
+      salgadas: products.filter(p => p.category_name.includes("salgada") || p.category_name === "pizzas" || p.category_name === "pizza"),
       doces: products.filter(p => p.category_name.includes("doce")),
-      bebidas: products.filter(p => p.category_name.includes("bebida") || p.category_name.includes("refrigerante")),
-      outros: products.filter(p => p.category_name.includes("salgado") || p.category_name.includes("comida"))
+      bebidas: products.filter(p => p.category_name.includes("bebida") || p.category_name.includes("refrigerante") || p.category_name.includes("suco")),
+      outros: products.filter(p => p.category_name.includes("salgadinho") || p.category_name === "salgados" || p.category_name.includes("porção") || p.category_name.includes("comida"))
     };
   }, [products]);
 
@@ -148,7 +131,6 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
     }
   };
 
-  // Verifica se o cliente cumpriu todas as metas de clique estabelecidas no Admin
   const comboEstaCompleto = 
     salgadas.length === dadosDecodificados.salgadas &&
     doces.length === dadosDecodificados.doces &&
@@ -190,11 +172,9 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
             <span className="inline-block bg-[#E33B19] text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-[#FFD166]">
               {promotion.badge || "PROMO DO DIA"}
             </span>
-            {validadeTexto && (
-              <span className="inline-flex items-center gap-1 bg-amber-500/20 text-[#FFD166] text-[10px] font-bold px-2 py-0.5 rounded-md">
-                <Clock className="size-3" /> {validadeTexto}
-              </span>
-            )}
+            <span className="inline-flex items-center bg-amber-500/20 text-[#FFD166] text-[10px] font-bold px-2 py-0.5 rounded-md">
+              Aproveite no site!
+            </span>
           </div>
           <h3 className="font-display text-xl md:text-2xl leading-tight text-white mt-1">{dadosDecodificados.nome}</h3>
           <p className="text-xs text-cream/80 mt-1">{dadosDecodificados.descricao}</p>
@@ -249,7 +229,7 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
                         }`}
                       >
                         {p.nome}
-                        {doces.includes(p.nome) && <Check className="size-4 text-[#E33B19 stroke-[3]" />}
+                        {doces.includes(p.nome) && <Check className="size-4 text-[#E33B19] stroke-[3]" />}
                       </button>
                     ))}
                   </div>
@@ -309,7 +289,7 @@ export function PromoModal({ isOpen, onClose, promotion }: PromoModalProps) {
           )}
         </div>
 
-        {/* Rodapé Fechado */}
+        {/* Rodapé Comercial */}
         <div className="p-5 border-t bg-gray-50 flex items-center justify-between shrink-0">
           <div>
             <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Valor do Combo</span>
