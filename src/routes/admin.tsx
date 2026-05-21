@@ -156,6 +156,7 @@ function AdminPanel() {
     setPromoBadgeFixa(promo.badge || "");
     setPromoPreco(promo.preco.toString());
     setPromoPrecoAntigo(promo.preco_antigo?.toString() || "");
+    setImageUrl(""); // Reseta o estado temporário de upload de mídia nova
     
     try {
       if (promo.descricao && promo.descricao.startsWith("{")) {
@@ -182,7 +183,7 @@ function AdminPanel() {
     if (p) carregarDadosPromocao(p);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "ITEM" | "CARROSSEL") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "ITEM" | "CARROSSEL" | "CARD_BAIXO") => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
       setUploading(true);
@@ -203,6 +204,9 @@ function AdminPanel() {
       if (target === "CARROSSEL") {
         setBannerCarrosselUrl(data.publicUrl);
         alert("Arte do carrossel carregada! Não esqueça de clicar em 'Salvar Promoção do Dia'.");
+      } else if (target === "CARD_BAIXO") {
+        setImageUrl(data.publicUrl);
+        alert("Nova imagem para o card promocional carregada!");
       } else {
         setImageUrl(data.publicUrl);
         alert("Foto carregada com sucesso!");
@@ -276,7 +280,7 @@ function AdminPanel() {
         textoExibido: promoDescricaoTexto
       });
 
-      // Busca a imagem atual no estado local antes de atualizar para não perder a referência
+      // Pega a imagem que já existia no banco para não sobrepor por null por engano
       const promoAtual = promotions.find(p => p.id === selectedPromoId);
       const imagemFinal = imageUrl || promoAtual?.image_url || null;
 
@@ -492,7 +496,7 @@ function AdminPanel() {
                     value={textoInformativo}
                     onChange={(e) => setTextoInformativo(e.target.value)}
                     className="w-full px-2 py-1.5 text-xs rounded-lg border border-gray-300 h-12 resize-none text-slate-800 font-medium"
-                    placeholder="Leve nossa seleção campeã com preço reduzido!"
+                    placeholder="Leve nossa selection campeã com preço reduzido!"
                   />
                 </div>
 
@@ -620,6 +624,26 @@ function AdminPanel() {
                     onChange={(e) => setPromoDescricaoTexto(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 h-16 resize-none text-slate-800 font-medium"
                   />
+                </div>
+
+                {/* NOVO CAMPO DE UPLOAD DE MÍDIA INTEGRADO PARA OS 4 CARDS DE BAIXO */}
+                <div>
+                  <label className="block text-xs font-black uppercase text-slate-600 mb-1">Alterar Imagem do Card</label>
+                  <input
+                    type="file" accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "CARD_BAIXO")}
+                    disabled={uploading}
+                    className="text-xs text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:border-gray-300 file:bg-gray-50 file:text-slate-800 hover:file:bg-gray-100 cursor-pointer w-full"
+                  />
+                  {(imageUrl || promotions.find(p => p.id === selectedPromoId)?.image_url) && (
+                    <div className="mt-2 text-center border p-2 rounded-xl bg-gray-50">
+                      <img 
+                        src={imageUrl || promotions.find(p => p.id === selectedPromoId)?.image_url || ""} 
+                        alt="Preview Card" 
+                        className="h-16 mx-auto object-cover rounded-lg border shadow-inner" 
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-slate-50 p-2.5 rounded-xl border border-gray-200 space-y-2">
